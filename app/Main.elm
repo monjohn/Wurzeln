@@ -3,7 +3,7 @@ module Main exposing (..)
 import App.Worter exposing (json)
 import Debug exposing (log)
 import Html exposing (Html, button, div, pre, text)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, ismap)
 import Html.Events exposing (onClick)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
@@ -44,22 +44,20 @@ type alias WordPair =
 
 type alias Card =
     { face : String
-    , card : WordPair
+    , wordPair : WordPair
     , matched : Bool
     }
 
 
-
--- type CardPicked
---   = NoCard
---   | PickedOne Card
---   | PickedTwo Card Card
+type CardPicked
+    = NoCard
+    | PickedOne Card
+    | PickedTwo Card Card
 
 
 type alias Model =
     { cards : List Card
-    , firstPick : Maybe Card
-    , secondPick : Maybe Card
+    , picked : CardPicked
     , allWords : List WordPair
     }
 
@@ -89,13 +87,17 @@ init =
         cards =
             prepareCards allWords
     in
-        ( { firstPick = Nothing
-          , secondPick = Nothing
+        ( { picked = NoCard
           , allWords = allWords
           , cards = cards
           }
         , shuffleCards cards
         )
+
+
+isMatched : Card -> Card -> Bool
+isMatched card1 card2 =
+    card1.wordPair.german == card2.wordPair.german
 
 
 
@@ -114,45 +116,26 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FlipCard c ->
-            let
-                firstPick =
-                    getFirstPick model c
+            case model.picked of
+                NoCard ->
+                    ( { model | picked = PickedOne c }, Cmd.none )
 
-                secondPick =
-                    getSecondPick model c
-
-                isMatch =
-                    (Maybe.map (\pick -> pick.card.german) firstPick) == (Maybe.map (\pick -> pick.card.german) secondPick)
-
-                cards =
-                    if isMatch then
-                        flipCards firstPick secondPick model.cards
+                PickedOne c1 ->
+                    if isMatched c c1 then
+                        ( { model
+                            | picked = NoCard
+                            , cards = flipCards c c1 model.cards
+                          }
+                        , Cmd.none
+                        )
                     else
-                        model.cards
-            in
-                ( { model
-                    | cards = cards
-                    , firstPick =
-                        if isMatch then
-                            Nothing
-                        else
-                            firstPick
-                    , secondPick =
-                        if isMatch then
-                            Nothing
-                        else
-                            secondPick
-                  }
-                , Cmd.none
-                )
+                        ( { model | picked = PickedTwo c c1 }, Cmd.none )
+
+                PickedTwo c1 c2 ->
+                    ( model, Cmd.none )
 
         CloseCards t ->
-            ( { model
-                | firstPick = Nothing
-                , secondPick = Nothing
-              }
-            , Cmd.none
-            )
+            ( { model | picked = NoCard }, Cmd.none )
 
         NewBoard board ->
             ( { model
@@ -168,33 +151,14 @@ update msg model =
             init
 
 
-getFirstPick : Model -> Card -> Maybe Card
-getFirstPick { firstPick, secondPick } card =
-    if (firstPick == Nothing) then
-        Just card
-    else
-        firstPick
-
-
-getSecondPick : Model -> Card -> Maybe Card
-getSecondPick { firstPick, secondPick } card =
-    if (firstPick /= Nothing && secondPick == Nothing && Just card /= firstPick) then
-        Just card
-    else
-        secondPick
-
-
-flipCards : Maybe Card -> Maybe Card -> List Card -> List Card
+flipCards : Card -> Card -> List Card -> List Card
 flipCards firstPick secondPick cards =
     let
-        getFace card =
-            card.face
-
-        matchCard card =
-            if Just card.face == (Maybe.map getFace firstPick) || Just card.face == (Maybe.map getFace secondPick) then
-                { card | matched = True }
+        matchCard c =
+            if isMatched c firstPick || isMatched c secondPick then
+                { c | matched = True }
             else
-                card
+                c
     in
         List.map matchCard cards
 
@@ -205,21 +169,39 @@ flipCards firstPick secondPick cards =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if model.firstPick == Nothing || model.secondPick == Nothing then
-        Sub.none
-    else
-        Time.every (500 * millisecond) CloseCards
+    case model.picked of
+        NoCard ->
+            Sub.none
+
+        PickedOne _ ->
+            Sub.none
+
+        PickedTwo _ _ ->
+            Time.every (1000 * millisecond) CloseCards
 
 
 
 -- VIEW
 
 
+sameCard : Card -> Card -> Bool
+sameCard card1 card2 =
+    card1.face == card2.face
+
+
 view : Model -> Html Msg
 view model =
     let
         isFlipped card =
-            model.firstPick == (Just card) || model.secondPick == (Just card) || card.matched
+            case model.picked of
+                NoCard ->
+                    card.matched
+
+                PickedOne c1 ->
+                    sameCard c1 card || card.matched
+
+                PickedTwo c1 c2 ->
+                    sameCard c1 card || sameCard c2 card || card.matched
 
         isFinished =
             (length (filter (\c -> c.matched == False) model.cards)) == 0

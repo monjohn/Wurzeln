@@ -20,7 +20,7 @@ h1 {
   font-size: 48px;
   font-weight: 900;
   font-style: italic;
-  color: #ff2d98;
+  color: #bbb;
   text-align: center;
   margin-bottom: 12px;
   margin-top: 24px;
@@ -83,7 +83,7 @@ h1 {
   .card__back {
     z-index: 2;
     transform: rotateY(0deg);
-    background: #f8bbd0;
+    background: tomato;
   }
 }
 
@@ -141,7 +141,7 @@ h1 {
 
   .modal__button {
     padding: 16px 24px;
-    background: #ff2d98;
+    background: tomato;
     border-radius: 4px;
     color: #fff;
     border: none;
