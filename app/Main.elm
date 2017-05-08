@@ -2,14 +2,15 @@ module Main exposing (..)
 
 import App.Worter exposing (json)
 import Debug exposing (log)
-import Html exposing (Html, button, div, pre, text)
-import Html.Attributes exposing (class, ismap)
+import Html exposing (Html, button, div, fieldset, header, input, pre, text)
+import Html.Attributes exposing (class, ismap, name, type_, value)
 import Html.Events exposing (onClick)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import List exposing (filter, length, map, range)
 import Random
 import Random.List exposing (shuffle)
+import Regex exposing (contains, regex)
 import Time exposing (Time, millisecond)
 
 
@@ -62,6 +63,12 @@ type alias Model =
     }
 
 
+type FilterOptions
+    = All
+    | Verbs
+    | Nouns
+
+
 prepareCards : List WordPair -> List Card
 prepareCards words =
     let
@@ -105,16 +112,41 @@ isMatched card1 card2 =
 
 
 type Msg
-    = FlipCard Card
+    = FilterCards FilterOptions
+    | FlipCard Card
     | CloseCards Time
     | NewBoard (List Card)
     | Restart
     | Shuffle
 
 
+isNoun : WordPair -> Bool
+isNoun pair =
+    contains (regex "^(der|die|das)") pair.german
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        FilterCards f ->
+            case f of
+                All ->
+                    ( model, Cmd.none )
+
+                Nouns ->
+                    ( { model
+                        | cards = prepareCards (List.filter isNoun model.allWords)
+                      }
+                    , Cmd.none
+                    )
+
+                Verbs ->
+                    ( { model
+                        | cards = prepareCards (List.filter (not << isNoun) model.allWords)
+                      }
+                    , Cmd.none
+                    )
+
         FlipCard c ->
             case model.picked of
                 NoCard ->
@@ -189,6 +221,42 @@ sameCard card1 card2 =
     card1.face == card2.face
 
 
+filterSelect : Html Msg
+filterSelect =
+    div [ class "filter" ]
+        [ fieldset []
+            [ input
+                [ type_ "radio"
+                , name "partOfSpeech"
+                , Html.Attributes.value "all"
+                , onClick (FilterCards All)
+                ]
+                []
+            , text " all"
+            ]
+        , fieldset []
+            [ input
+                [ type_ "radio"
+                , name "partOfSpeech"
+                , Html.Attributes.value "verbs"
+                , onClick (FilterCards Verbs)
+                ]
+                []
+            , text " verbs"
+            ]
+        , fieldset []
+            [ input
+                [ type_ "radio"
+                , name "partOfSpeech"
+                , Html.Attributes.value "nouns"
+                , onClick (FilterCards Nouns)
+                ]
+                []
+            , text " nouns"
+            ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
     let
@@ -207,8 +275,10 @@ view model =
             (length (filter (\c -> c.matched == False) model.cards)) == 0
     in
         div [ class "wrapper" ]
-            [ div [ class "title" ] [ text "The Memory Game" ]
-            , div [ class "caption" ] [ text "For the ultimate brain's pleasure... " ]
+            [ header []
+                [ div [ class "title" ] [ text "The Memory Game" ]
+                , filterSelect
+                ]
             , div [ class "container" ]
                 (List.map (\c -> card (isFlipped c) c) model.cards)
             , modal isFinished
