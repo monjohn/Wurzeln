@@ -2,15 +2,16 @@ module Main exposing (..)
 
 import App.Worter exposing (json)
 import Debug exposing (log)
-import Html exposing (Html, button, div, fieldset, header, input, pre, text)
+import Html exposing (..)
 import Html.Attributes exposing (class, ismap, name, type_, value)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import List exposing (filter, length, map, range)
 import Random
 import Random.List exposing (shuffle)
 import Regex exposing (contains, regex)
+import Set
 import Time exposing (Time, millisecond)
 
 
@@ -57,9 +58,10 @@ type CardPicked
 
 
 type alias Model =
-    { cards : List Card
+    { allWords : List WordPair
+    , cards : List Card
     , picked : CardPicked
-    , allWords : List WordPair
+    , roots : List String
     }
 
 
@@ -93,10 +95,16 @@ init =
 
         cards =
             prepareCards allWords
+
+        roots =
+            allWords
+                |> List.foldl (\word -> Set.insert word.root) Set.empty
+                |> Set.toList
     in
         ( { picked = NoCard
           , allWords = allWords
           , cards = cards
+          , roots = roots
           }
         , shuffleCards cards
         )
@@ -116,6 +124,7 @@ type Msg
     | FlipCard Card
     | CloseCards Time
     | NewBoard (List Card)
+    | SelectRoot String
     | Restart
     | Shuffle
 
@@ -176,6 +185,16 @@ update msg model =
             , Cmd.none
             )
 
+        SelectRoot root ->
+            ( { model
+                | cards =
+                    model.allWords
+                        |> List.filter (\word -> word.root == root)
+                        |> prepareCards
+              }
+            , Cmd.none
+            )
+
         Shuffle ->
             ( model, shuffleCards model.cards )
 
@@ -219,6 +238,17 @@ subscriptions model =
 sameCard : Card -> Card -> Bool
 sameCard card1 card2 =
     card1.face == card2.face
+
+
+rootSelect : List String -> Html Msg
+rootSelect roots =
+    div [ class "rootSelect" ]
+        [ select [ onInput SelectRoot ]
+            (List.map
+                (\root -> Html.option [ Html.Attributes.value root ] [ text root ])
+                roots
+            )
+        ]
 
 
 filterSelect : Html Msg
@@ -277,6 +307,7 @@ view model =
         div [ class "wrapper" ]
             [ header []
                 [ div [ class "title" ] [ text "The Memory Game" ]
+                , rootSelect model.roots
                 , filterSelect
                 ]
             , div [ class "container" ]

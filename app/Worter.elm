@@ -89,6 +89,11 @@ json =
      "root": "schließ",
      "german": "der Zusammenschluß",
      "english": "union"
+   },
+   {
+     "root": "halt",
+     "german": "abhalten",
+     "english": "keep from, discourage"
    }
   ]
 """
