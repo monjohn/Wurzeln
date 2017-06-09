@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import App.Worter exposing (json)
+import App.Roots
 import Debug exposing (log)
 import Html exposing (..)
 import Html.Attributes exposing (class, ismap, name, type_, value)
@@ -23,8 +24,25 @@ wordPairDecoder =
         |> required "english" Json.Decode.string
 
 
-decodeResults : String -> List WordPair
-decodeResults json =
+descriptionDecoder : Decoder Description
+descriptionDecoder =
+    decode Description
+        |> required "root" Json.Decode.string
+        |> required "description" Json.Decode.string
+
+
+decodeDescriptions : String -> List Description
+decodeDescriptions json =
+    case decodeString (list descriptionDecoder) json of
+        Ok descriptions ->
+            descriptions
+
+        Err _ ->
+            []
+
+
+decodeWordpairs : String -> List WordPair
+decodeWordpairs json =
     case decodeString (list wordPairDecoder) json of
         Ok words ->
             words
@@ -35,6 +53,12 @@ decodeResults json =
 
 
 -- MODEL
+
+
+type alias Description =
+    { root : String
+    , description : String
+    }
 
 
 type alias WordPair =
@@ -60,6 +84,7 @@ type CardPicked
 type alias Model =
     { allWords : List WordPair
     , cards : List Card
+    , descriptions : List Description
     , picked : CardPicked
     , roots : List String
     }
@@ -91,7 +116,7 @@ init : ( Model, Cmd Msg )
 init =
     let
         allWords =
-            decodeResults json
+            decodeWordpairs App.Worter.json
 
         cards =
             prepareCards allWords
@@ -101,9 +126,10 @@ init =
                 |> List.foldl (\word -> Set.insert word.root) Set.empty
                 |> Set.toList
     in
-        ( { picked = NoCard
-          , allWords = allWords
+        ( { allWords = allWords
           , cards = cards
+          , descriptions = decodeDescriptions App.Roots.json
+          , picked = NoCard
           , roots = roots
           }
         , shuffleCards cards
