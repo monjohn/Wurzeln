@@ -331,7 +331,9 @@ view model =
             (length (filter (\c -> c.matched == False) model.cards)) == 0
     in
         div [ class "wrapper" ]
-            [ header []
+            [ nav [ class "navbar" ]
+                [ h1 [] [ text "Wörter" ] ]
+            , header []
                 [ div [ class "title" ] [ text "The Memory Game" ]
                 , rootSelect model.roots
                 , filterSelect
