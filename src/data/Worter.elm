@@ -1,4 +1,4 @@
-module App.Worter exposing (json)
+module Data.Worter exposing (json)
 
 
 json : String
