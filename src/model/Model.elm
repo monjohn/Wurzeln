@@ -14,12 +14,12 @@ import Data.Worter as Worter
 
 
 type Msg
-    = FilterCards FilterOptions
+    = CloseCards Time
     | FlipCard Card
-    | CloseCards Time
     | NewBoard (List Card)
-    | SelectRoot String
     | Restart
+    | SelectRoot String
+    | SelectPartOfSpeech FilterOptions
     | Shuffle
 
 
@@ -59,6 +59,8 @@ type alias Model =
     , descriptions : List Description
     , picked : CardPicked
     , roots : List String
+    , selectedPartOfSpeech : FilterOptions
+    , selectedRoot : Maybe String
     }
 
 
@@ -103,6 +105,8 @@ init =
           , descriptions = decodeDescriptions Roots.json
           , picked = NoCard
           , roots = roots
+          , selectedRoot = Nothing
+          , selectedPartOfSpeech = All
           }
         , shuffleCards cards
         )

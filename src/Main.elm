@@ -2,35 +2,32 @@ module Main exposing (..)
 
 import Debug exposing (log)
 import Html exposing (..)
-import Regex exposing (contains, regex)
 import View.View exposing (view)
 import Model.Model exposing (..)
 import Time exposing (Time, millisecond)
-
-
-isNoun : WordPair -> Bool
-isNoun pair =
-    contains (regex "^(der|die|das)") pair.german
+import Utils exposing (isNoun)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        FilterCards f ->
-            case f of
+        SelectPartOfSpeech filter ->
+            case filter of
                 All ->
-                    ( model, Cmd.none )
+                    ( { model | selectedPartOfSpeech = filter }, Cmd.none )
 
                 Nouns ->
                     ( { model
-                        | cards = prepareCards (List.filter isNoun model.allWords)
+                        | selectedPartOfSpeech = filter
+                        , cards = prepareCards (List.filter isNoun model.allWords)
                       }
                     , Cmd.none
                     )
 
                 Verbs ->
                     ( { model
-                        | cards = prepareCards (List.filter (not << isNoun) model.allWords)
+                        | selectedPartOfSpeech = filter
+                        , cards = prepareCards (List.filter (not << isNoun) model.allWords)
                       }
                     , Cmd.none
                     )
@@ -66,10 +63,18 @@ update msg model =
 
         SelectRoot root ->
             ( { model
-                | cards =
-                    model.allWords
-                        |> List.filter (\word -> word.root == root)
-                        |> prepareCards
+                | selectedRoot =
+                    case root of
+                        "" ->
+                            Nothing
+
+                        _ ->
+                            Just root
+
+                -- | cards =
+                --     model.allWords
+                --         |> List.filter (\word -> word.root == root)
+                --         |> prepareCards
               }
             , Cmd.none
             )

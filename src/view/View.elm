@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (class, ismap, name, type_, value)
 import Html.Events exposing (onClick, onInput)
 import List exposing (filter, length, map, range)
+import Utils exposing (isNoun)
 
 
 sameCard : Card -> Card -> Bool
@@ -16,9 +17,10 @@ rootSelect : List String -> Html Msg
 rootSelect roots =
     div [ class "rootSelect" ]
         [ select [ onInput SelectRoot ]
-            (List.map
-                (\root -> Html.option [ Html.Attributes.value root ] [ text root ])
-                roots
+            (Html.option [ Html.Attributes.value "" ] [ text "All roots" ]
+                :: List.map
+                    (\root -> Html.option [ Html.Attributes.value root ] [ text root ])
+                    roots
             )
         ]
 
@@ -31,7 +33,7 @@ filterSelect =
                 [ type_ "radio"
                 , name "partOfSpeech"
                 , Html.Attributes.value "all"
-                , onClick (FilterCards All)
+                , onClick (SelectPartOfSpeech All)
                 ]
                 []
             , text " all"
@@ -41,7 +43,7 @@ filterSelect =
                 [ type_ "radio"
                 , name "partOfSpeech"
                 , Html.Attributes.value "verbs"
-                , onClick (FilterCards Verbs)
+                , onClick (SelectPartOfSpeech Verbs)
                 ]
                 []
             , text " verbs"
@@ -51,12 +53,45 @@ filterSelect =
                 [ type_ "radio"
                 , name "partOfSpeech"
                 , Html.Attributes.value "nouns"
-                , onClick (FilterCards Nouns)
+                , onClick (SelectPartOfSpeech Nouns)
                 ]
                 []
             , text " nouns"
             ]
         ]
+
+
+filterWords : Model -> List (Html Msg)
+filterWords model =
+    let
+        formatted =
+            List.map
+                (\pair ->
+                    div [ class "table-row" ]
+                        [ span [] [ text pair.german ]
+                        , span [] [ text pair.english ]
+                        ]
+                )
+    in
+        case ( model.selectedRoot, model.selectedPartOfSpeech ) of
+            ( Nothing, All ) ->
+                formatted model.allWords
+
+            ( Just selectedRoot, All ) ->
+                List.filter (\pair -> pair.root == selectedRoot) model.allWords
+                    |> formatted
+
+            ( Just selectedRoot, _ ) ->
+                List.filter (\pair -> pair.root == selectedRoot && isNoun pair) model.allWords
+                    |> formatted
+
+            ( Nothing, Nouns ) ->
+                List.filter (\pair -> isNoun pair) model.allWords
+                    |> formatted
+
+            ( Nothing, Verbs ) ->
+                List.filter (\pair -> (not << isNoun) pair) model.allWords
+                    |> formatted
 
 
 view : Model -> Html Msg
@@ -80,12 +115,16 @@ view model =
             [ nav [ class "navbar" ]
                 [ h1 [] [ text "Wörter" ] ]
             , header []
-                [ div [ class "title" ] [ text "The Memory Game" ]
-                , rootSelect model.roots
+                [ rootSelect model.roots
                 , filterSelect
                 ]
             , div [ class "container" ]
-                (List.map (\c -> card (isFlipped c) c) model.cards)
+                [ div [ class "word-table" ]
+                    (filterWords model)
+                ]
+
+            -- (Cards)
+            -- (List.map (\c -> card (isFlipped c) c) model.cards)
             , modal isFinished
             ]
 
