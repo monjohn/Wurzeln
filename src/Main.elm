@@ -3,9 +3,9 @@ module Main exposing (..)
 import Debug exposing (log)
 import Html exposing (..)
 import Regex exposing (contains, regex)
-import Time exposing (Time, millisecond)
 import View.View exposing (view)
 import Model.Model exposing (..)
+import Time exposing (Time, millisecond)
 
 
 isNoun : WordPair -> Bool

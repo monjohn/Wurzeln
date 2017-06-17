@@ -17,7 +17,7 @@ module.exports = env => ({
       {
         test: /\.elm/,
         exclude: [/elm-stuff/, /node_modules/],
-        use: [ 'elm-hot-loader', 'elm-webpack-loader?debug=true' ]
+        use: ['elm-hot-loader', 'elm-webpack-loader?debug=true']
       },
       {
         test: /\.scss/,
@@ -32,7 +32,11 @@ module.exports = env => ({
     port: 8080
   },
   plugins: [
-    new ExtractTextPlugin({ filename: 'bundle.css', disable: false, allChunks: true }),
+    new ExtractTextPlugin({
+      filename: 'bundle.css',
+      disable: false,
+      allChunks: true
+    }),
     new DashboardPlugin()
   ]
 })

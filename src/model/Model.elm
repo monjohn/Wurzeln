@@ -5,6 +5,7 @@ import Json.Decode.Pipeline exposing (..)
 import Random
 import Random.List exposing (shuffle)
 import Set
+import Time exposing (Time, millisecond)
 import Data.Roots as Roots
 import Data.Worter as Worter
 
