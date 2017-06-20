@@ -2,7 +2,7 @@ module View.View exposing (view)
 
 import Model.Model exposing (..)
 import Html exposing (..)
-import Html.Attributes exposing (class, ismap, name, type_, value)
+import Html.Attributes exposing (class, ismap, name, type_, value, href)
 import Html.Events exposing (onClick, onInput)
 import List exposing (filter, length, map, range)
 import Utils exposing (isNoun)
@@ -94,8 +94,39 @@ filterWords model =
                     |> formatted
 
 
+navbar : Html Msg
+navbar =
+    nav []
+        [ div [ class "navbar" ]
+            [ a [ href "#" ] [ h1 [] [ text "Wörter" ] ]
+            , a [ href "#words" ] [ span [] [ text "List of Words" ] ]
+            , a [ href "#memory" ] [ span [] [ text "Memory Game" ] ]
+            ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
+    let
+        isFinished =
+            (length (filter (\c -> c.matched == False) model.cards)) == 0
+
+        hash =
+            Debug.log "hash" (model.history.hash)
+    in
+        div [ class "wrapper" ]
+            [ (navbar)
+            , header []
+                [ rootSelect model.roots
+                , filterSelect
+                ]
+            , div [ class "container" ] (chooseBody hash model)
+            , modal isFinished
+            ]
+
+
+chooseBody : String -> Model -> List (Html Msg)
+chooseBody route model =
     let
         isFlipped card =
             case model.picked of
@@ -107,25 +138,12 @@ view model =
 
                 PickedTwo c1 c2 ->
                     sameCard c1 card || sameCard c2 card || card.matched
-
-        isFinished =
-            (length (filter (\c -> c.matched == False) model.cards)) == 0
     in
-        div [ class "wrapper" ]
-            [ nav [ class "navbar" ]
-                [ h1 [] [ text "Wörter" ] ]
-            , header []
-                [ rootSelect model.roots
-                , filterSelect
-                ]
-            , div [ class "container" ]
-                [ div [ class "word-table" ]
-                    (filterWords model)
-                ]
-
-            -- (Cards)
-            -- (List.map (\c -> card (isFlipped c) c) model.cards)
-            , modal isFinished
+        if route == "#memory" then
+            (List.map (\c -> card (isFlipped c) c) model.cards)
+        else
+            [ div [ class "word-table" ]
+                (filterWords model)
             ]
 
 
@@ -160,6 +178,7 @@ modal isFinished =
         [ div [ class "modal__content" ]
             [ div [ class "modal__title" ] [ text "✨ You won! ✨" ]
             , div [ class "modal__text" ] [ text "Wanna play again? I bet you won't open all cards this time! 😉" ]
-            , button [ class "modal__button", onClick Restart ] [ text "Restart" ]
+
+            -- , button [ class "modal__button", onClick Restart ] [ text "Restart" ]
             ]
         ]

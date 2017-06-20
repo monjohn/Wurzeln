@@ -8,6 +8,7 @@ import Set
 import Time exposing (Time, millisecond)
 import Data.Roots as Roots
 import Data.Worter as Worter
+import Navigation
 
 
 -- MESSAGES
@@ -16,8 +17,9 @@ import Data.Worter as Worter
 type Msg
     = CloseCards Time
     | FlipCard Card
+    | UrlChange Navigation.Location
     | NewBoard (List Card)
-    | Restart
+      -- | Restart
     | SelectRoot String
     | SelectPartOfSpeech FilterOptions
     | Shuffle
@@ -57,6 +59,7 @@ type alias Model =
     { allWords : List WordPair
     , cards : List Card
     , descriptions : List Description
+    , history : Navigation.Location
     , picked : CardPicked
     , roots : List String
     , selectedPartOfSpeech : FilterOptions
@@ -86,8 +89,8 @@ shuffleCards cards =
     Random.generate NewBoard (shuffle cards)
 
 
-init : ( Model, Cmd Msg )
-init =
+init : Navigation.Location -> ( Model, Cmd Msg )
+init location =
     let
         allWords =
             decodeWordpairs Worter.json
@@ -103,6 +106,7 @@ init =
         ( { allWords = allWords
           , cards = cards
           , descriptions = decodeDescriptions Roots.json
+          , history = location
           , picked = NoCard
           , roots = roots
           , selectedRoot = Nothing

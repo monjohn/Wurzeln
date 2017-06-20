@@ -1,9 +1,9 @@
 module Main exposing (..)
 
 import Debug exposing (log)
-import Html exposing (..)
 import View.View exposing (view)
 import Model.Model exposing (..)
+import Navigation
 import Time exposing (Time, millisecond)
 import Utils exposing (isNoun)
 
@@ -11,26 +11,8 @@ import Utils exposing (isNoun)
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SelectPartOfSpeech filter ->
-            case filter of
-                All ->
-                    ( { model | selectedPartOfSpeech = filter }, Cmd.none )
-
-                Nouns ->
-                    ( { model
-                        | selectedPartOfSpeech = filter
-                        , cards = prepareCards (List.filter isNoun model.allWords)
-                      }
-                    , Cmd.none
-                    )
-
-                Verbs ->
-                    ( { model
-                        | selectedPartOfSpeech = filter
-                        , cards = prepareCards (List.filter (not << isNoun) model.allWords)
-                      }
-                    , Cmd.none
-                    )
+        CloseCards t ->
+            ( { model | picked = NoCard }, Cmd.none )
 
         FlipCard c ->
             case model.picked of
@@ -51,15 +33,35 @@ update msg model =
                 PickedTwo c1 c2 ->
                     ( model, Cmd.none )
 
-        CloseCards t ->
-            ( { model | picked = NoCard }, Cmd.none )
-
         NewBoard board ->
             ( { model
                 | cards = board
               }
             , Cmd.none
             )
+
+        -- Restart ->
+        --     init
+        SelectPartOfSpeech filter ->
+            case filter of
+                All ->
+                    ( { model | selectedPartOfSpeech = filter }, Cmd.none )
+
+                Nouns ->
+                    ( { model
+                        | selectedPartOfSpeech = filter
+                        , cards = prepareCards (List.filter isNoun model.allWords)
+                      }
+                    , Cmd.none
+                    )
+
+                Verbs ->
+                    ( { model
+                        | selectedPartOfSpeech = filter
+                        , cards = prepareCards (List.filter (not << isNoun) model.allWords)
+                      }
+                    , Cmd.none
+                    )
 
         SelectRoot root ->
             ( { model
@@ -82,8 +84,8 @@ update msg model =
         Shuffle ->
             ( model, shuffleCards model.cards )
 
-        Restart ->
-            init
+        UrlChange location ->
+            ( { model | history = location }, Cmd.none )
 
 
 isMatched : Card -> Card -> Bool
@@ -126,7 +128,7 @@ subscriptions model =
 
 main : Program Never Model Msg
 main =
-    Html.program
+    Navigation.program UrlChange
         { init = init
         , view = view
         , update = update
